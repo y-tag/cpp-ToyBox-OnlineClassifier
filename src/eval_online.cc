@@ -4,7 +4,6 @@
 #include "arow.h"
 #include "scw.h"
 #include "svmlight_reader.h"
-#include "datum.h"
 
 #include <boost/math/special_functions/erf.hpp>
 
@@ -38,7 +37,7 @@ int main(int argc, char **argv) {
   }
 
   int ret = 0;
-  toybox::online::Datum x;
+  std::vector<std::pair<int, double> > x;
   int y = 0;
 
   struct params {

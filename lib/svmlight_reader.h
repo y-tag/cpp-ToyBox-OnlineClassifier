@@ -2,17 +2,17 @@
 #define TOYBOX_ONLINE_SVMLIGHT_READER_H
 
 #include <cstdio>
+#include <vector>
+#include <utility>
 
 namespace toybox {
 namespace online {
-
-struct Datum;
 
 class SVMLightReader {
   public:
     explicit SVMLightReader(const char *in_file);
     ~SVMLightReader();
-    int Read(Datum *x, int *y); // this might delete index and value in x
+    int Read(std::vector<std::pair<int, double> > *x, int *y);
     int Rewind();
     bool IsInitialized();
 

@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "datum.h"
-
 namespace {
 
 inline int my_getline(FILE *fp, std::string *buff) {
@@ -57,10 +55,11 @@ SVMLightReader::~SVMLightReader() {
   }
 }
 
-int SVMLightReader::Read(Datum *x, int *y) {
+int SVMLightReader::Read(std::vector<std::pair<int, double> > *x, int *y) {
   if (x == NULL || y == NULL) {
     return -1;
   }
+  x->clear();
 
   std::vector<int>    index_vector;
   std::vector<double> value_vector;
@@ -80,25 +79,8 @@ int SVMLightReader::Read(Datum *x, int *y) {
     if (v == NULL) {
       break;
     }
-    index_vector.push_back(static_cast<int>(strtol(f, NULL, 10)));
-    value_vector.push_back(strtod(v, NULL));
-  }
-
-  if (index_vector.size() > static_cast<size_t>(x->num_reserved)) {
-    if (x->num_reserved < 16) { x->num_reserved = 16; }
-    do {
-      x->num_reserved *= 2;
-    } while (index_vector.size() >= static_cast<size_t>(x->num_reserved));
-    if (x->index != NULL) { delete[] x->index; }
-    if (x->value != NULL) { delete[] x->value; }
-    x->index = new int[x->num_reserved];
-    x->value = new double[x->num_reserved];
-  }
-
-  x->num_feature = index_vector.size();
-  for (size_t i = 0; i < index_vector.size(); ++i) {
-    x->index[i] = index_vector[i];
-    x->value[i] = value_vector[i];
+    x->push_back(
+        std::make_pair(static_cast<int>(strtol(f, NULL, 10)), strtod(v, NULL)));
   }
 
   return 1;

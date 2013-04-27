@@ -9,7 +9,6 @@
 #include <vector>
 #include <utility>
 
-#include "datum.h"
 #include "serializer.h"
 #include "deserializer.h"
 
@@ -41,34 +40,34 @@ AROW::~AROW() {
   }
 }
 
-double AROW::Predict(const Datum &x) const {
+double AROW::Predict(const std::vector<std::pair<int, double> > &x) const {
   double predicted_value = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    predicted_value += mu_array_[x.index[i] & index_mask] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    predicted_value += mu_array_[x[i].first & index_mask] * x[i].second;
   }
 
   return predicted_value;
 }
 
 int AROW::UpdateWithPredictedValue(
-  const Datum &x, int y, double predicted_value
+    const std::vector<std::pair<int, double> > &x, int y, double predicted_value
 ) {
   double loss = 1.0 - y * predicted_value;
   if (loss < 0.0) { return 0; } // no need to update
 
   double beta = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    beta += sigma_array_[x.index[i] & index_mask] * x.value[i] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    beta += sigma_array_[x[i].first & index_mask] * x[i].second * x[i].second;
   }
   beta = 1.0 / (beta + r_);
 
   double alpha = loss * beta;
   // update mu and sigma
-  for (int i = 0; i < x.num_feature; ++i) {
-    int j = x.index[i] & index_mask;
-    double tmp = sigma_array_[j] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    int j = x[i].first & index_mask;
+    double tmp = sigma_array_[j] * x[i].second;
     mu_array_[j]    += alpha * y * tmp;
     sigma_array_[j] -= beta * tmp * tmp;
   }
@@ -76,7 +75,7 @@ int AROW::UpdateWithPredictedValue(
   return 1;
 }
 
-int AROW::Update(const Datum &x, int y) {
+int AROW::Update(const std::vector<std::pair<int, double> > &x, int y) {
   double predicted_value = Predict(x);
   return UpdateWithPredictedValue(x, y, predicted_value);
 }

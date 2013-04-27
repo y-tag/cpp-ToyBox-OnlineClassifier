@@ -9,7 +9,6 @@
 #include <vector>
 #include <utility>
 
-#include "datum.h"
 #include "serializer.h"
 #include "deserializer.h"
 
@@ -33,31 +32,32 @@ Perceptron::~Perceptron() {
   }
 }
 
-double Perceptron::Predict(const Datum &x) const {
+double Perceptron::Predict(
+    const std::vector<std::pair<int, double> > &x) const {
   double predicted_value = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    predicted_value += w_array_[x.index[i] & index_mask] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    predicted_value += w_array_[x[i].first & index_mask] * x[i].second;
   }
 
   return predicted_value;
 }
 
 int Perceptron::UpdateWithPredictedValue(
-  const Datum &x, int y, double predicted_value
+    const std::vector<std::pair<int, double> > &x, int y, double predicted_value
 ) {
 
   if (y * predicted_value <= 0.0) {
     int index_mask = (1 << feature_bit_) - 1;
-    for (int i = 0; i < x.num_feature; ++i) {
-      w_array_[x.index[i] & index_mask] += y * x.value[i];
+    for (size_t i = 0; i < x.size(); ++i) {
+      w_array_[x[i].first & index_mask] += y * x[i].second;
     }
   }
 
   return 1;
 }
 
-int Perceptron::Update(const Datum &x, int y) {
+int Perceptron::Update(const std::vector<std::pair<int, double> > &x, int y) {
   double predicted_value = Predict(x);
   return UpdateWithPredictedValue(x, y, predicted_value);
 }

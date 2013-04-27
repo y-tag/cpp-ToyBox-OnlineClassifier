@@ -10,7 +10,6 @@
 #include <vector>
 #include <utility>
 
-#include "datum.h"
 #include "serializer.h"
 #include "deserializer.h"
 
@@ -46,18 +45,18 @@ SCW::~SCW() {
   }
 }
 
-double SCW::Predict(const Datum &x) const {
+double SCW::Predict(const std::vector<std::pair<int, double> > &x) const {
   double predicted_value = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    predicted_value += mu_array_[x.index[i] & index_mask] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    predicted_value += mu_array_[x[i].first & index_mask] * x[i].second;
   }
 
   return predicted_value;
 }
 
 int SCW::UpdateWithPredictedValue(
-  const Datum &x, int y, double predicted_value
+  const std::vector<std::pair<int, double> > &x, int y, double predicted_value
 ) {
   
   double s_phi = phi_ * phi_;
@@ -65,8 +64,8 @@ int SCW::UpdateWithPredictedValue(
 
   double v = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    v += sigma_array_[x.index[i] & index_mask] * x.value[i] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    v += sigma_array_[x[i].first & index_mask] * x[i].second * x[i].second;
   }
 
   double loss = phi_ * std::sqrt(v) - m;
@@ -92,9 +91,9 @@ int SCW::UpdateWithPredictedValue(
 
   double beta = (alpha*phi_) / (std::sqrt(u) + v*alpha*phi_);
 
-  for (int i = 0; i < x.num_feature; ++i) {
-    int j = x.index[i] & index_mask;
-    double tmp = sigma_array_[j] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    int j = x[i].first & index_mask;
+    double tmp = sigma_array_[j] * x[i].second;
     mu_array_[j]    += alpha * y * tmp;
     sigma_array_[j] -= beta * tmp * tmp;
   }
@@ -102,7 +101,7 @@ int SCW::UpdateWithPredictedValue(
   return 1;
 }
 
-int SCW::Update(const Datum &x, int y) {
+int SCW::Update(const std::vector<std::pair<int, double> > &x, int y) {
   double predicted_value = Predict(x);
   return UpdateWithPredictedValue(x, y, predicted_value);
 }

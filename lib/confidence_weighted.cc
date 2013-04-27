@@ -10,7 +10,6 @@
 #include <vector>
 #include <utility>
 
-#include "datum.h"
 #include "serializer.h"
 #include "deserializer.h"
 
@@ -44,18 +43,19 @@ ConfidenceWeighted::~ConfidenceWeighted() {
   }
 }
 
-double ConfidenceWeighted::Predict(const Datum &x) const {
+double ConfidenceWeighted::Predict(
+    const std::vector<std::pair<int, double> > &x) const {
   double predicted_value = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    predicted_value += mu_array_[x.index[i] & index_mask] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    predicted_value += mu_array_[x[i].first & index_mask] * x[i].second;
   }
 
   return predicted_value;
 }
 
 int ConfidenceWeighted::UpdateWithPredictedValue(
-  const Datum &x, int y, double predicted_value
+    const std::vector<std::pair<int, double> > &x, int y, double predicted_value
 ) {
   
   double s_phi = phi_ * phi_;
@@ -63,8 +63,8 @@ int ConfidenceWeighted::UpdateWithPredictedValue(
 
   double v = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    v += sigma_array_[x.index[i] & index_mask] * x.value[i] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    v += sigma_array_[x[i].first & index_mask] * x[i].second * x[i].second;
   }
 
   double alpha = (-m*psi_ + std::sqrt((m*m*s_phi*s_phi)/4.0 + v*s_phi*xi_)) / (v*xi_);
@@ -78,18 +78,19 @@ int ConfidenceWeighted::UpdateWithPredictedValue(
 
   double mu_coe    = alpha * y;
   double sigma_coe = (alpha * phi_) / std::sqrt(u);
-  for (int i = 0; i < x.num_feature; ++i) {
-    int j = x.index[i] & index_mask;
-    mu_array_[j] += mu_coe * sigma_array_[j] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    int j = x[i].first & index_mask;
+    mu_array_[j] += mu_coe * sigma_array_[j] * x[i].second;
     sigma_array_[j]
-      = 1.0 / ((1.0 / sigma_array_[j]) + sigma_coe * x.value[i] * x.value[i]);
-    //sigma_array_[j] -= beta * sigma_array_[j] * sigma_array_[j] * x.value[i] * x.value[i];
+      = 1.0 / ((1.0 / sigma_array_[j]) + sigma_coe * x[i].second * x[i].second);
+    //sigma_array_[j] -= beta * sigma_array_[j] * sigma_array_[j] * x[i].second * x[i].second;
   }
 
   return 1;
 }
 
-int ConfidenceWeighted::Update(const Datum &x, int y) {
+int ConfidenceWeighted::Update(
+    const std::vector<std::pair<int, double> > &x, int y) {
   double predicted_value = Predict(x);
   return UpdateWithPredictedValue(x, y, predicted_value);
 }

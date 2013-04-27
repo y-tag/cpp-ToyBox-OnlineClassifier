@@ -1,10 +1,12 @@
 #ifndef TOYBOX_ONLINE_CONFIDENCEWEIGHTED_H
 #define TOYBOX_ONLINE_CONFIDENCEWEIGHTED_H
 
+#include <vector>
+#include <utility>
+
 namespace toybox {
 namespace online {
 
-struct Datum;
 class Serializer;
 class Deserializer;
 
@@ -13,9 +15,11 @@ class ConfidenceWeighted {
     ConfidenceWeighted();
     ConfidenceWeighted(int feature_bit, double a, double phi);
     ~ConfidenceWeighted();
-    double Predict(const Datum &x) const;
-    int UpdateWithPredictedValue(const Datum &x, int y, double predicted_value);
-    int Update(const Datum &x, int y);
+    double Predict(const std::vector<std::pair<int, double> > &x) const;
+    int UpdateWithPredictedValue(
+        const std::vector<std::pair<int, double> > &x,
+        int y, double predicted_value);
+    int Update(const std::vector<std::pair<int, double> > &x, int y);
     int Save(Serializer *serializer);
     int Load(Deserializer *deserializer);
     bool IsInitialized();

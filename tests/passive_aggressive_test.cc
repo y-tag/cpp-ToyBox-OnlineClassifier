@@ -3,7 +3,6 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "datum.h"
 #include "passive_aggressive.h"
 #include "simple_text_serializer.h"
 #include "simple_text_deserializer.h"
@@ -31,10 +30,7 @@ void PassiveAggressiveTest::setUp() { }
 void PassiveAggressiveTest::tearDown() { }
 
 void PassiveAggressiveTest::testUpdateAndPredict() {
-  Datum x;
-  x.num_reserved = 32;
-  x.index = new int[x.num_reserved];
-  x.value = new double[x.num_reserved];
+  std::vector<std::pair<int, double> > x;
 
   // true weights
   // 1:0.5 2:2.0 3:-3.0
@@ -47,8 +43,8 @@ void PassiveAggressiveTest::testUpdateAndPredict() {
   PassiveAggressive pa(PA, feature_bit, C);
 
   // y:+1 1:1.0
-  x.num_feature = 1;
-  x.index[0] = 1; x.value[0] =  1.0;
+  x.clear();
+  x.push_back(std::make_pair(1, 1.0));
   predicted_value = pa.Predict(x);
   expected_value = 0.0;
   CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_value, predicted_value, DBL_EPSILON);
@@ -60,9 +56,9 @@ void PassiveAggressiveTest::testUpdateAndPredict() {
   CPPUNIT_ASSERT_EQUAL(1, ret);
 
   // y:-1 3:1.0 1:0.5
-  x.num_feature = 2;
-  x.index[0] = 3; x.value[0] =  1.0;
-  x.index[1] = 1; x.value[1] =  0.5;
+  x.clear();
+  x.push_back(std::make_pair(3, 1.0));
+  x.push_back(std::make_pair(1, 0.5));
   predicted_value = pa.Predict(x);
   expected_value = 1.0 * 0.5;
   CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_value, predicted_value, DBL_EPSILON);
@@ -75,10 +71,10 @@ void PassiveAggressiveTest::testUpdateAndPredict() {
   CPPUNIT_ASSERT_EQUAL(1, ret);
 
   // y:-1 3:0.5 1:2.0 2:-1.0
-  x.num_feature = 3;
-  x.index[0] = 3; x.value[0] =  0.5;
-  x.index[1] = 1; x.value[1] =  2.0;
-  x.index[2] = 2; x.value[2] = -1.0;
+  x.clear();
+  x.push_back(std::make_pair(3,  0.5));
+  x.push_back(std::make_pair(1,  2.0));
+  x.push_back(std::make_pair(2, -1.0));
   predicted_value = pa.Predict(x);
   expected_value = 0.4 * 2.0 + -1.2 * 0.5;
   CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_value, predicted_value, DBL_EPSILON);
@@ -92,9 +88,9 @@ void PassiveAggressiveTest::testUpdateAndPredict() {
   CPPUNIT_ASSERT_EQUAL(1, ret);
 
   // y:+1 1:1.0 2:0.5
-  x.num_feature = 2;
-  x.index[0] = 1; x.value[0] =  1.0;
-  x.index[1] = 2; x.value[1] =  0.5;
+  x.clear();
+  x.push_back(std::make_pair(1, 1.0));
+  x.push_back(std::make_pair(2, 0.5));
   predicted_value = pa.Predict(x);
   expected_value = ( 0.4 + (1.2 / 5.25) * -1.0 *  2.0) * 1.0 +
                    ( 0.0 + (1.2 / 5.25) * -1.0 * -1.0) * 0.5;
@@ -111,10 +107,7 @@ void PassiveAggressiveTest::testUpdateAndPredict() {
 }
 
 void PassiveAggressiveTest::testSaveAndLoad() {
-  Datum x;
-  x.num_reserved = 32;
-  x.index = new int[x.num_reserved];
-  x.value = new double[x.num_reserved];
+  std::vector<std::pair<int, double> > x;
 
   const char *filename = "passive_aggressive_save_test1.txt";
 
@@ -123,24 +116,24 @@ void PassiveAggressiveTest::testSaveAndLoad() {
   double C = 0.1;
   PassiveAggressive pa(PA2, feature_bit, C);
 
-  x.num_feature = 1;
-  x.index[0] = 1; x.value[0] =  1.0;
+  x.clear();
+  x.push_back(std::make_pair(1, 1.0));
   ret = pa.Update(x, +1);
 
-  x.num_feature = 2;
-  x.index[0] = 3; x.value[0] =  1.0;
-  x.index[1] = 1; x.value[1] =  0.5;
+  x.clear();
+  x.push_back(std::make_pair(3, 1.0));
+  x.push_back(std::make_pair(1, 0.5));
   ret = pa.Update(x, -1);
 
-  x.num_feature = 3;
-  x.index[0] = 3; x.value[0] =  0.5;
-  x.index[1] = 1; x.value[1] =  2.0;
-  x.index[2] = 2; x.value[2] = -1.0;
+  x.clear();
+  x.push_back(std::make_pair(3,  0.5));
+  x.push_back(std::make_pair(1,  2.0));
+  x.push_back(std::make_pair(2, -1.0));
   ret = pa.Update(x, -1);
 
-  x.num_feature = 2;
-  x.index[0] = 1; x.value[0] =  1.0;
-  x.index[1] = 2; x.value[1] =  0.5;
+  x.clear();
+  x.push_back(std::make_pair(1,  1.0));
+  x.push_back(std::make_pair(2,  0.5));
   ret = pa.Update(x, +1);
 
   // save
@@ -163,12 +156,12 @@ void PassiveAggressiveTest::testSaveAndLoad() {
   CPPUNIT_ASSERT_EQUAL(pa.C(), loaded_pa.C());
 
   // for predict
-  x.num_feature = 5;
-  x.index[0] = 1; x.value[0] =  1.0;
-  x.index[1] = 2; x.value[1] = -1.0;
-  x.index[2] = 3; x.value[2] =  1.0;
-  x.index[3] = 4; x.value[3] = -1.0;
-  x.index[4] = 5; x.value[4] =  1.0;
+  x.clear();
+  x.push_back(std::make_pair(1,  1.0));
+  x.push_back(std::make_pair(2, -1.0));
+  x.push_back(std::make_pair(3,  1.0));
+  x.push_back(std::make_pair(4, -1.0));
+  x.push_back(std::make_pair(5,  1.0));
 
   double expected_value  = pa.Predict(x);
   double predicted_value = loaded_pa.Predict(x);

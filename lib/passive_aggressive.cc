@@ -9,7 +9,6 @@
 #include <vector>
 #include <utility>
 
-#include "datum.h"
 #include "serializer.h"
 #include "deserializer.h"
 
@@ -33,26 +32,27 @@ PassiveAggressive::~PassiveAggressive() {
   }
 }
 
-double PassiveAggressive::Predict(const Datum &x) const {
+double PassiveAggressive::Predict(
+    const std::vector<std::pair<int, double> > &x) const {
   double predicted_value = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    predicted_value += w_array_[x.index[i] & index_mask] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    predicted_value += w_array_[x[i].first & index_mask] * x[i].second;
   }
 
   return predicted_value;
 }
 
 int PassiveAggressive::UpdateWithPredictedValue(
-  const Datum &x, int y, double predicted_value
+    const std::vector<std::pair<int, double> > &x, int y, double predicted_value
 ) {
   
   double loss = 1.0 - y * predicted_value;
 
   if (loss > 0.0) {
     double squared_x_norm = 0.0;
-    for (int i = 0; i < x.num_feature; ++i) {
-      squared_x_norm += x.value[i] * x.value[i];
+    for (size_t i = 0; i < x.size(); ++i) {
+      squared_x_norm += x[i].second * x[i].second;
     }
 
     double eta = 0.0;
@@ -66,22 +66,23 @@ int PassiveAggressive::UpdateWithPredictedValue(
     }
 
     int index_mask = (1 << feature_bit_) - 1;
-    for (int i = 0; i < x.num_feature; ++i) {
-      w_array_[x.index[i] & index_mask] += eta * y * x.value[i];
+    for (size_t i = 0; i < x.size(); ++i) {
+      w_array_[x[i].first & index_mask] += eta * y * x[i].second;
     }
   }
 
   return 1;
 }
 
-int PassiveAggressive::Update(const Datum &x, int y) {
+int PassiveAggressive::Update(
+    const std::vector<std::pair<int, double> > &x, int y) {
 
   double predicted_value = 0.0;
   double squared_x_norm  = 0.0;
   int index_mask = (1 << feature_bit_) - 1;
-  for (int i = 0; i < x.num_feature; ++i) {
-    predicted_value += w_array_[x.index[i] & index_mask] * x.value[i];
-    squared_x_norm += x.value[i] * x.value[i];
+  for (size_t i = 0; i < x.size(); ++i) {
+    predicted_value += w_array_[x[i].first & index_mask] * x[i].second;
+    squared_x_norm += x[i].second * x[i].second;
   }
 
   double loss = 1.0 - y * predicted_value;
@@ -97,8 +98,8 @@ int PassiveAggressive::Update(const Datum &x, int y) {
       eta = loss / (squared_x_norm + (0.5 / C_));
     }
 
-    for (int i = 0; i < x.num_feature; ++i) {
-      w_array_[x.index[i] & index_mask] += eta * y * x.value[i];
+    for (size_t i = 0; i < x.size(); ++i) {
+      w_array_[x[i].first & index_mask] += eta * y * x[i].second;
     }
   }
 
